@@ -8,47 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
 
 	"pault.ag/go/debian/control"
-	"pault.ag/go/fancytext"
+	"pault.ag/go/descend/descend"
 )
-
-func DputFile(client *http.Client, host, archive, fpath string) error {
-	filename := path.Base(fpath)
-	req, err := http.NewRequest(
-		"PUT",
-		fmt.Sprintf("https://%s/%s/%s", host, archive, filename),
-		nil,
-	)
-
-	if err != nil {
-		return err
-	}
-	fd, err := os.Open(fpath)
-	if err != nil {
-		return err
-	}
-	req.Body = fd
-	_, err = client.Do(req)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func DoPutChanges(client *http.Client, changes *control.Changes, host, archive string) error {
-	root := path.Dir(changes.Filename)
-	for _, file := range changes.Files {
-		done := fancytext.BooleanFormatSpinner(fmt.Sprintf("%%s   %s", file.Filename))
-		err := DputFile(client, host, archive, path.Join(root, file.Filename))
-		done(err == nil)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 func Missing(values ...*string) {
 	for _, value := range values {
@@ -99,7 +62,7 @@ func main() {
 		}
 
 		client := &http.Client{Transport: tr}
-		err = DoPutChanges(client, changes, "localhost:1984", "foo")
+		err = descend.DoPutChanges(client, changes, "localhost:1984", "foo")
 		if err != nil {
 			panic(err)
 		}
