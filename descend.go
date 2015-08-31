@@ -36,24 +36,12 @@ func DputFile(client *http.Client, host, archive, fpath string) error {
 	return nil
 }
 
-var spinnerFormat string = "%%s   - %s"
-
 func DoPutChanges(client *http.Client, changes *control.Changes, host, archive string) error {
 	root := path.Dir(changes.Filename)
 	for _, file := range changes.Files {
-		c := fancytext.FormatSpinner(spinnerFormat)
+		done := fancytext.BooleanFormatSpinner(fmt.Sprintf("%%s   %s", file.Filename))
 		err := DputFile(client, host, archive, path.Join(root, file.Filename))
-		c()
-
-		fancyCheck := "✓"
-		if err != nil {
-			fancyCheck = "✗"
-		}
-
-		fmt.Printf(
-			"%s\n",
-			fmt.Sprintf(fmt.Sprintf(spinnerFormat, file.Filename), fancyCheck),
-		)
+		done(err == nil)
 		if err != nil {
 			return err
 		}
@@ -64,7 +52,7 @@ func DoPutChanges(client *http.Client, changes *control.Changes, host, archive s
 func main() {
 	caPool := x509.NewCertPool()
 	x509CaCrt, err := ioutil.ReadFile(
-		"/home/paultag/certs/cakey.crt",
+		"/home/paultag/certs/cacert.crt",
 	)
 	if err != nil {
 		panic(err)
