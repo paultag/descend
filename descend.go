@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"pault.ag/go/debian/control"
+	"pault.ag/go/fancytext"
 )
 
 func DputFile(client *http.Client, host, archive, fpath string) error {
@@ -35,10 +36,24 @@ func DputFile(client *http.Client, host, archive, fpath string) error {
 	return nil
 }
 
+var spinnerFormat string = "%%s   - %s"
+
 func DoPutChanges(client *http.Client, changes *control.Changes, host, archive string) error {
 	root := path.Dir(changes.Filename)
 	for _, file := range changes.Files {
+		c := fancytext.FormatSpinner(spinnerFormat)
 		err := DputFile(client, host, archive, path.Join(root, file.Filename))
+		c()
+
+		fancyCheck := "✓"
+		if err != nil {
+			fancyCheck = "✗"
+		}
+
+		fmt.Printf(
+			"%s\n",
+			fmt.Sprintf(fmt.Sprintf(spinnerFormat, file.Filename), fancyCheck),
+		)
 		if err != nil {
 			return err
 		}
