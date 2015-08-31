@@ -29,6 +29,10 @@ func main() {
 	clientCrt := flag.String("cert", "", "Client Cert")
 	clientKey := flag.String("key", "", "Client Key")
 
+	host := flag.String("host", "localhost", "Host to PUT to")
+	port := flag.Int("port", 80, "Port to PUT on")
+	archive := flag.String("archive", "/", "Archive to PUT to")
+
 	flag.Parse()
 
 	Missing(caCert, clientCrt, clientKey)
@@ -62,7 +66,11 @@ func main() {
 		}
 
 		client := &http.Client{Transport: tr}
-		err = descend.DoPutChanges(client, changes, "localhost:1984", "foo")
+		err = descend.DoPutChanges(
+			client, changes,
+			fmt.Sprintf("%s:%d", *host, *port),
+			*archive,
+		)
 		if err != nil {
 			panic(err)
 		}
