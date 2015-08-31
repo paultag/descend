@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -49,21 +50,35 @@ func DoPutChanges(client *http.Client, changes *control.Changes, host, archive s
 	return nil
 }
 
+func Missing(values ...*string) {
+	for _, value := range values {
+		if *value != "" {
+			continue
+		}
+		flag.Usage()
+		os.Exit(0)
+	}
+}
+
 func main() {
+
+	caCert := flag.String("ca", "", "CA Cert")
+	clientCrt := flag.String("cert", "", "Client Cert")
+	clientKey := flag.String("key", "", "Client Key")
+
+	flag.Parse()
+
+	Missing(caCert, clientCrt, clientKey)
+
 	caPool := x509.NewCertPool()
-	x509CaCrt, err := ioutil.ReadFile(
-		"/home/paultag/certs/cacert.crt",
-	)
+	x509CaCrt, err := ioutil.ReadFile(*caCert)
 	if err != nil {
 		panic(err)
 	}
 	if ok := caPool.AppendCertsFromPEM(x509CaCrt); !ok {
 		panic(fmt.Errorf("Error appending CA cert from PEM!"))
 	}
-	cert, err := tls.LoadX509KeyPair(
-		"/home/paultag/certs/cassiel.pault.ag.crt",
-		"/home/paultag/certs/cassiel.pault.ag.key",
-	)
+	cert, err := tls.LoadX509KeyPair(*clientCrt, *clientKey)
 	if err != nil {
 		panic(err)
 	}
@@ -77,14 +92,16 @@ func main() {
 		DisableCompression: true,
 	}
 
-	changes, err := control.ParseChangesFile(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
+	for _, changesPath := range flag.Args() {
+		changes, err := control.ParseChangesFile(changesPath)
+		if err != nil {
+			panic(err)
+		}
 
-	client := &http.Client{Transport: tr}
-	err = DoPutChanges(client, changes, "localhost:1984", "foo")
-	if err != nil {
-		panic(err)
+		client := &http.Client{Transport: tr}
+		err = DoPutChanges(client, changes, "localhost:1984", "foo")
+		if err != nil {
+			panic(err)
+		}
 	}
 }
