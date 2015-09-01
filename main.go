@@ -21,12 +21,8 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 
 	"pault.ag/go/config"
@@ -56,26 +52,9 @@ func main() {
 	flags.Parse(os.Args[1:])
 	Missing(flags, conf.CaCert, conf.Cert, conf.Key)
 
-	caPool := x509.NewCertPool()
-	x509CaCrt, err := ioutil.ReadFile(conf.CaCert)
+	client, err := descend.NewClient(conf.CaCert, conf.Cert, conf.Key)
 	if err != nil {
 		panic(err)
-	}
-	if ok := caPool.AppendCertsFromPEM(x509CaCrt); !ok {
-		panic(fmt.Errorf("Error appending CA cert from PEM!"))
-	}
-	cert, err := tls.LoadX509KeyPair(conf.Cert, conf.Key)
-	if err != nil {
-		panic(err)
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			ClientAuth:   tls.RequireAnyClientCert,
-			RootCAs:      caPool,
-		},
-		DisableCompression: true,
 	}
 
 	for _, changesPath := range flags.Args() {
@@ -85,7 +64,6 @@ func main() {
 		}
 
 		fmt.Printf("Pushing %s\n", changesPath)
-		client := &http.Client{Transport: tr}
 		err = descend.DoPutChanges(
 			client, changes,
 			fmt.Sprintf("%s:%d", conf.Host, conf.Port),
