@@ -50,6 +50,10 @@ func DputFile(client *http.Client, host, archive, fpath string) (error, map[stri
 		return err, map[string]string{}
 	}
 
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Server rejected PUT"), map[string]string{}
+	}
+
 	var reply map[string]string
 	json.NewDecoder(resp.Body).Decode(&reply)
 	return nil, reply
