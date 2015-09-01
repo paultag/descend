@@ -32,8 +32,9 @@ import (
 
 func DputFile(client *http.Client, host, archive, fpath string) (error, map[string]string) {
 	filename := path.Base(fpath)
-	putPath := path.Join(archive, filename)
-	url := fmt.Sprintf("https://%s/%s", host, putPath)
+	putPath := path.Clean(path.Join("/", archive, filename))
+
+	url := fmt.Sprintf("https://%s%s", host, putPath)
 	req, err := http.NewRequest("PUT", url, nil)
 
 	if err != nil {
