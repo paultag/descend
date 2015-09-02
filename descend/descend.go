@@ -67,7 +67,8 @@ func DoPutChanges(client *http.Client, changes *control.Changes, host, archive s
 			return err
 		}
 	}
-	return nil
+	err, _ := DputFile(client, host, archive, changes.Filename)
+	return err
 }
 
 // vim: foldmethod=marker
